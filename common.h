@@ -1,21 +1,30 @@
 #pragma once
 
-#define MAX_BUFF_SIZE 267
+#define MAX_BUFF_SIZE 272
 
-const int size_body = 256;
-const int size_response = 256;
+#define HEADER_COMMAND 0
+#define HEADER_DATA_TYPE 1
 
-const int size_header = 2;
-const int size_gid = 10;
-const int size_pin = 4;
 
-const int body_separate = 85;
+#define SIZE_HEADER  2
+#define SIZE_GID  10
+#define SIZE_PIN  4
 
-const int flag_login = 5;
-const int flag_logout = 4;
-const int flag_inspect = 3;
-const int flag_update = 2;
+#define SIZE_BODY_DATA 85
 
-const int type_name = 0;
-const int type_birth = 1;
-const int type_money = 2;
+
+#define COMMAND_CLIENT_UPDATE 2
+
+#define COMMAND_CLIENT_READ 3
+#define COMMAND_CLIENT_READ_NAME 0
+#define COMMAND_CLIENT_READ_BIRTHDAY 1
+#define COMMAND_CLIENT_READ_BALANCE 2
+
+#define COMMAND_CLIENT_LOGOUT 4
+#define COMMAND_CLIENT_LOGIN 5
+
+
+#define COMMAND_SERVER_LOGIN_NG 0
+#define COMMAND_SERVER_LOGIN_OK 1
+#define COMMAND_SERVER_LOGIN_OK_RW 0
+#define COMMAND_SERVER_LOGIN_OK_RO 1

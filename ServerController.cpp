@@ -7,5 +7,5 @@ ServerController :: ServerController(int lower_time, int upper_time){
 }
 
 bool ServerController :: canUpdate(){
-    return true;
+    return false;
 }

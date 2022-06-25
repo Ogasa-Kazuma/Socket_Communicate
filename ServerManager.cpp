@@ -14,8 +14,17 @@ ServerManager :: ServerManager(ClientManager* clientManager, DataManager* dataMa
 }
 
 ServerManager :: ~ServerManager(){
+    
+    //閉じないとOS上に残るかも
     close(this -> sock);
     close(this -> sock_client);
+    //メモリ開放
+    /*
+    delete this -> clientManager;
+    delete this -> dataManager;
+    delete this -> serverController;
+    */
+
 }
 
 int ServerManager :: Init(){
@@ -84,41 +93,11 @@ int ServerManager :: BindedSocket(sock_info* sock_details, const char* path){
 
 
 
-
-
-
-
-////////////////////////// Request Check /////////////////////////////////////
-void ServerManager :: ReadRequest(char* destination, char* source, int length, int offset){
-        for(int i = 0; i < length; i++){
-            destination[i] = source[i + offset];
-        }
-        //destination[length] = NULL;
-}
-
-
-
-bool ServerManager :: IsDataCame(char* buff){
-    for(int i = 0; i < sizeof(buff); i++){
-        if(!buff[i] == 0 && !buff[i] == '\0'){
-            return true;
-        }
-    }
-    return false;
-}
-//////////////////////////////////////////////////////////////////////////
-
-
-
-
-
-
-
 ///////////////////////// System Log ////////////////////////////////////
 void ServerManager :: LoginSyslog(){
     char message[100];
     memset(message, '\0', sizeof(message));
-    strncpy(message, this -> gid_logined_user, size_gid);
+    strncpy(message, this -> gid_logined_user, sizeof(this -> gid_logined_user));
     strcat(message, " : login");
     this -> clientManager -> Syslog(message);
 
@@ -127,14 +106,18 @@ void ServerManager :: LoginSyslog(){
 void ServerManager :: LogoutSyslog(){
     char message[100];
     memset(message, '\0', sizeof(message));
-    strncpy(message, this -> gid_logined_user, size_gid);
+    strncpy(message, this -> gid_logined_user, sizeof(this -> gid_logined_user));
     strcat(message, " : logout");
     this -> clientManager -> Syslog(message);
 
 }
 
 void ServerManager :: UpdateSyslog(char* type, char* value){
-
+    char message[100];
+    memset(message, '\0', sizeof(message));
+    strncpy(message, this -> gid_logined_user, sizeof(this -> gid_logined_user));
+    strcat(message, " : update");
+    this -> clientManager -> Syslog(message);
 } 
 ////////////////////////////////////////////////////////////////////////////
 
@@ -148,6 +131,7 @@ void ServerManager :: UpdateSyslog(char* type, char* value){
 
 
 void ServerManager :: InvalidRequestMessageToClient(){
+//パラメータや要求がおかしいとクライアントに伝える
     char invalid_message[100] = "invalid request";
     this -> SendToClient(invalid_message);    
 }
@@ -170,6 +154,7 @@ void ServerManager :: SendToClient(char* response){
 /////////////////// Login Status //////////////////////////////////////////
 
 void ServerManager :: InitGid(){
+//すべてNULL文字にする
     for(int i = 0; i < sizeof(this -> gid_logined_user); i++){
         this -> gid_logined_user[i] = '\0';
 
@@ -186,16 +171,16 @@ void ServerManager :: InitGid(){
 void ServerManager :: MakeResponse(char* request, char* response){
 
     
-    if(request[0] == flag_login){
+    if(request[HEADER_COMMAND] == COMMAND_CLIENT_LOGIN){
         this -> Login(request, response);
     }
-    else if(request[0] == flag_logout){
+    else if(request[HEADER_COMMAND] == COMMAND_CLIENT_LOGOUT){
         this -> Logout(response);
     }
-    else if(request[0] == flag_inspect){
+    else if(request[HEADER_COMMAND] == COMMAND_CLIENT_READ){
         this -> InspectResponse(request, response);
     }
-    else if(request[0] == flag_update){
+    else if(request[HEADER_COMMAND] == COMMAND_CLIENT_UPDATE){
         this -> UpdateResponse(request, response);
     }
     else{
@@ -205,6 +190,8 @@ void ServerManager :: MakeResponse(char* request, char* response){
 }
 
 bool ServerManager :: IsUserLogined(){
+//ログイン済みか判定
+//ログインしていないなら、GIDの値はすべて0
     for(int i = 0; i < sizeof(this -> gid_logined_user); i++){
         if(!(this -> gid_logined_user[i] == '\0') && !(this -> gid_logined_user[i] == 0)){
             return true;
@@ -214,6 +201,7 @@ bool ServerManager :: IsUserLogined(){
 }
 
 void ServerManager :: ShowClientStatus(const char* message){
+//サーバー側プロセスにクライアントの状態とメッセージを表示する
     char write_buff[100];
     memset(write_buff, '\0', sizeof(write_buff));
     strncpy(write_buff, this -> gid_logined_user, sizeof(this -> gid_logined_user));
@@ -222,11 +210,14 @@ void ServerManager :: ShowClientStatus(const char* message){
 }
 
 void ServerManager :: Login(char* request, char* response){
+    
+    //ログインの可否と更新の可否をクライアントに通知
     this -> clientManager -> LoginResponse(request, response, this -> gid_logined_user);
-    this -> LoginSyslog();
-
     this -> SendToClient(response);
+
+    //ログイン成功ならシステムログへの記録と、サーバー側プロセスのUIに表示
     if(this -> IsUserLogined()){
+        this -> LoginSyslog();
         this -> ShowClientStatus(" : ログイン\n");
     }
 
@@ -236,11 +227,12 @@ void ServerManager :: Login(char* request, char* response){
 
 void ServerManager :: UpdateResponse(char* request, char* response){
 
-    char value_to_register_db[body_separate];
+    char value_to_register_db[SIZE_BODY_DATA];
     for(int i = 0; i < sizeof(value_to_register_db); i++){
-        value_to_register_db[i] = request[i + size_header];
+        value_to_register_db[i] = request[i + SIZE_HEADER];
     }
     
+    //今回の仕様ではmoneyで固定
     this -> dataManager -> Update(this -> gid_logined_user, "money", value_to_register_db);
     this -> ShowClientStatus(" : 預金額を更新しました\n");    
 
@@ -250,18 +242,18 @@ void ServerManager :: UpdateResponse(char* request, char* response){
 
 void ServerManager :: InspectResponse(char* request, char* response){
 
-    const char type_request = request[1];
+    const char type_request = request[HEADER_DATA_TYPE];
 
 
-    if(type_request == type_name){
+    if(type_request == COMMAND_CLIENT_READ_NAME){
         this -> dataManager -> Get(this -> gid_logined_user, "name", response);
         this -> SendToClient(response);
     }
-    else if(type_request == type_birth){
+    else if(type_request == COMMAND_CLIENT_READ_BIRTHDAY){
         this -> dataManager -> Get(this -> gid_logined_user, "birth", response);
         this -> SendToClient(response);
     }
-    else if(type_request == type_money){
+    else if(type_request == COMMAND_CLIENT_READ_BALANCE){
         this -> dataManager -> Get(this -> gid_logined_user, "money", response);
         this -> SendToClient(response);
     }
@@ -269,25 +261,22 @@ void ServerManager :: InspectResponse(char* request, char* response){
         this -> InvalidRequestMessageToClient();
     }
 
-    
-
 
 }
 
 
 
 void ServerManager :: Logout(char* response){
-
+    
+    //GIDを初期化する前にシステムログとサーバー側UIに出力
     this -> LogoutSyslog();
     this -> ShowClientStatus(" : ログアウト\n");
-
+    
+    //GIDの初期化
     this -> InitGid();
-    //strcpy(response, "out\n");
+    
+    //ログアウトユーザーとの通信を終了
     this -> flag_exit_communicate = true;
-    this -> SendToClient(response);//write(this -> sock_client, response, temp_buff_size);
-
-    
-    
     close(this -> sock_client);
     
 }
@@ -324,10 +313,8 @@ int ServerManager :: Communicate(){
         int result_read = read(this -> sock_client, buff_rcv, sizeof(buff_rcv));
 
         if(!(result_read == -1)){
-
             this -> MakeResponse(buff_rcv, buff_res);
         }
-            
     }
     return 0;
 }
@@ -335,40 +322,31 @@ int ServerManager :: Communicate(){
 
 
 void ServerManager :: Receive(){
-    
+    //UIを表示したあとに通信開始
+    this -> NavigateUser();
+
     while(1){
 
-        this -> NavigateUser();   
-   
-        //UIを表示したあとに通信開始
-        if(this -> hasNavigated){
-            this -> SetNonBlocking(this -> sock);
-            //標準入力をノンブロッキングモードに
-            this -> SetNonBlocking(0);
+        this -> SetNonBlocking(this -> sock);
+        //標準入力をノンブロッキングモードに
+        this -> SetNonBlocking(0);
 
-            //5, は接続可能なクライアント数なのでハードコーディングはやめる!            
-            listen(this -> sock, this -> max_client_accept);
-            this -> sock_client = Accept(&sock_details);
-            
-            this -> SetNonBlocking(this -> sock_client);
-
-            //いずれかのクライアントと繋がっていればデータのやりとり！
-            if(this -> sock_client >= 0){
-                int result_communicate = Communicate();
-                //通信中にサーバ終了キーが押されたらそのままプロセス終了！
-                if(result_communicate == this -> exitCode){
-                    break;
-                }
-            }
-              
-            //終了判定（キー入力）
-            if(NeedExit()){
-                break;
-            }
-            
-        }
+        //接続要求の受け入れ            
+        listen(this -> sock, this -> max_client_accept);
+        this -> sock_client = Accept(&sock_details);
         
-               
+        this -> SetNonBlocking(this -> sock_client);
+
+        //いずれかのクライアントと繋がっていればデータのやりとり！
+        if(this -> sock_client >= 0){
+            int result_communicate = Communicate();
+        }
+            
+        //終了判定（キー入力）
+        if(NeedExit()){
+            break;
+        }
+            
     }
      
 }

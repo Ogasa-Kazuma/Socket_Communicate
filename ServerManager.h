@@ -33,7 +33,7 @@ class ServerManager{
         bool hasNavigated;
         const int exitCode = 2;
         const int max_client_accept = 5;
-        char gid_logined_user[size_gid];
+        char gid_logined_user[SIZE_GID];
         int flag_exit_communicate = false;
 
         //メソッド
@@ -44,11 +44,11 @@ class ServerManager{
         int Bind(int sock, sock_info* sock_details);
         int BindedSocket(sock_info* sock_details, const char* path);
         int Accept(sock_info* sock_details);
-        void ReadRequest(char* destination, char* source, int length, int offset);
+        
         int Communicate();
         void SetNonBlocking(int fd);
         void NavigateUser();
-        bool IsDataCame(char* buff);
+        
         char JudgeRequest(char* header);
         void MakeResponse(char* request, char* response);
         void InspectResponse(char* request, char* response);
