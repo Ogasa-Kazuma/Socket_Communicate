@@ -19,7 +19,9 @@ class ClientManager{
     public:
         ClientManager();
         void MakeResponse(char* request, char* response);
+        void LoginResponse(char* request, char* response, char* gid_logined_user);
         void ReadRequest(char* destination, char* source, int length, int offset);
         void Syslog(const char* message);
+
 
 };

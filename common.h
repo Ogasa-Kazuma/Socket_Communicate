@@ -6,12 +6,10 @@ const int size_body = 256;
 const int size_response = 256;
 
 const int size_header = 2;
-const int size_gid = 11;
-const int size_pind = 5;
+const int size_gid = 10;
+const int size_pin = 4;
 
 const int body_separate = 85;
-
-const int temp_buff_size = 5;
 
 const int flag_login = 5;
 const int flag_logout = 4;

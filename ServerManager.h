@@ -49,6 +49,7 @@ class ServerManager{
         void InspectResponse(char* request, char* response);
         void UpdateResponse(char* request, char* response);
         void InitGid();
+        void Login(char* request, char* response);
         void Logout(char* response);
         void LoginSyslog();
         void LogoutSyslog();

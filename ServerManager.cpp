@@ -113,7 +113,8 @@ bool ServerManager :: IsDataCame(char* buff){
 
 ///////////////////////// System Log ////////////////////////////////////
 void ServerManager :: LoginSyslog(){
-    char message[size_gid];
+    char message[100];
+    memset(message, '\0', sizeof(message));
     strncpy(message, this -> gid_logined_user, size_gid);
     strcat(message, " : login");
     this -> clientManager -> Syslog(message);
@@ -121,7 +122,8 @@ void ServerManager :: LoginSyslog(){
 }
 
 void ServerManager :: LogoutSyslog(){
-    char message[size_gid];
+    char message[100];
+    memset(message, '\0', sizeof(message));
     strncpy(message, this -> gid_logined_user, size_gid);
     strcat(message, " : logout");
     this -> clientManager -> Syslog(message);
@@ -167,7 +169,9 @@ void ServerManager :: SendToClient(char* response){
 void ServerManager :: InitGid(){
     for(int i = 0; i < sizeof(this -> gid_logined_user); i++){
         this -> gid_logined_user[i] = '\0';
+
     }
+
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -178,21 +182,17 @@ void ServerManager :: InitGid(){
 //////////////// Response /////////////////////////////////////////////////
 void ServerManager :: MakeResponse(char* request, char* response){
 
-    char header[size_header];
-    memset(header, '\0', sizeof(header));
-
-    this -> ReadRequest(header, request, size_header, 0);
-
-    if(header[0] == flag_login){
-        //this -> clientManager ->
+    
+    if(request[0] == flag_login){
+        this -> Login(request, response);
     }
-    else if(header[0] == flag_logout){
+    else if(request[0] == flag_logout){
         this -> Logout(response);
     }
-    else if(header[0] == flag_inspect){
+    else if(request[0] == flag_inspect){
         this -> InspectResponse(request, response);
     }
-    else if(header[0] == flag_update){
+    else if(request[0] == flag_update){
         this -> UpdateResponse(request, response);
     }
     else{
@@ -201,7 +201,13 @@ void ServerManager :: MakeResponse(char* request, char* response){
 
 }
 
-
+void ServerManager :: Login(char* request, char* response){
+    this -> clientManager -> LoginResponse(request, response, this -> gid_logined_user);
+    this -> LoginSyslog();
+    //strncpy(gid_logined_user, gid, sizeof(gid));
+    //write(1, response, 1);
+    this -> SendToClient(response);
+}
 
 
 
@@ -246,8 +252,9 @@ void ServerManager :: InspectResponse(char* request, char* response){
 void ServerManager :: Logout(char* response){
 
     this -> LogoutSyslog();
+    
     this -> InitGid();
-    strcpy(response, "out\n");
+    //strcpy(response, "out\n");
     this -> flag_exit_communicate = true;
     this -> SendToClient(response);//write(this -> sock_client, response, temp_buff_size);
 
@@ -255,6 +262,7 @@ void ServerManager :: Logout(char* response){
     write(1, write_buff, sizeof(write_buff));
     
     close(this -> sock_client);
+    
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -284,6 +292,7 @@ int ServerManager :: Communicate(){
         
 
         printf("start Communicate\n");
+        printf("%s\n", this -> gid_logined_user);
         
         //メモリ初期化しないと、同じリクエストが同時にめちゃくちゃ来まくってるみたいになる
         memset(buff_rcv, '\0', sizeof(buff_rcv));

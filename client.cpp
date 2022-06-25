@@ -101,7 +101,8 @@ void ReceiveFromServer(int sock){
     printf("文字列");
     printf("%s\n", buff_read);
     printf("数字");
-    printf("%c\n", *buff_read);
+    printf("%d\n", buff_read[0]);
+    printf("%d\n", buff_read[1]);
 }
 
 void Communicate(int sock){
