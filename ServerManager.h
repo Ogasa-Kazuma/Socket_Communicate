@@ -56,6 +56,9 @@ class ServerManager{
         void UpdateSyslog(char* type, char* value);
         void SendToClient(char* response);
         void InvalidRequestMessageToClient();
+        bool IsUserLogined();
+        void ShowClientStatus(const char* message);
+
 
     public:
         ServerManager(ClientManager* clientManager);

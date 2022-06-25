@@ -201,12 +201,32 @@ void ServerManager :: MakeResponse(char* request, char* response){
 
 }
 
+bool ServerManager :: IsUserLogined(){
+    for(int i = 0; i < sizeof(this -> gid_logined_user); i++){
+        if(!(this -> gid_logined_user[i] == '\0') && !(this -> gid_logined_user[i] == 0)){
+            return true;
+        }
+    }
+    return false;
+}
+
+void ServerManager :: ShowClientStatus(const char* message){
+    char write_buff[100];
+    memset(write_buff, '\0', sizeof(write_buff));
+    strncpy(write_buff, this -> gid_logined_user, sizeof(this -> gid_logined_user));
+    strcat(write_buff, message);
+    write(1, write_buff, sizeof(write_buff));
+}
+
 void ServerManager :: Login(char* request, char* response){
     this -> clientManager -> LoginResponse(request, response, this -> gid_logined_user);
     this -> LoginSyslog();
-    //strncpy(gid_logined_user, gid, sizeof(gid));
-    //write(1, response, 1);
+
     this -> SendToClient(response);
+    if(this -> IsUserLogined()){
+        this -> ShowClientStatus(" : ログイン\n");
+    }
+
 }
 
 
@@ -218,9 +238,7 @@ void ServerManager :: UpdateResponse(char* request, char* response){
         value_to_register_db[i] = request[i + size_header];
     }
     
-    strcpy(response, "upd"); //いらない
-    this -> SendToClient(response);
-    
+    this -> ShowClientStatus(" : 預金額を更新しました\n");    
 
 }
 
@@ -230,6 +248,8 @@ void ServerManager :: InspectResponse(char* request, char* response){
 
     const char type_request = request[1];
     if(type_request == type_name){
+
+
         strcpy(response, "kam");
     }
     else if(type_request == type_birth){
@@ -242,8 +262,8 @@ void ServerManager :: InspectResponse(char* request, char* response){
         this -> InvalidRequestMessageToClient();
     }
 
-    write(1, response, sizeof(response));
     this -> SendToClient(response);
+
 
 }
 
@@ -252,14 +272,14 @@ void ServerManager :: InspectResponse(char* request, char* response){
 void ServerManager :: Logout(char* response){
 
     this -> LogoutSyslog();
-    
+    this -> ShowClientStatus(" : ログアウト\n");
+
     this -> InitGid();
     //strcpy(response, "out\n");
     this -> flag_exit_communicate = true;
     this -> SendToClient(response);//write(this -> sock_client, response, temp_buff_size);
 
-    const char write_buff[100] = "ログアウト成功";
-    write(1, write_buff, sizeof(write_buff));
+    
     
     close(this -> sock_client);
     
@@ -289,11 +309,7 @@ int ServerManager :: Communicate(){
             break;
         }
 
-        
-
-        printf("start Communicate\n");
-        printf("%s\n", this -> gid_logined_user);
-        
+            
         //メモリ初期化しないと、同じリクエストが同時にめちゃくちゃ来まくってるみたいになる
         memset(buff_rcv, '\0', sizeof(buff_rcv));
         memset(buff_res, '\0', sizeof(buff_res));
@@ -304,10 +320,6 @@ int ServerManager :: Communicate(){
 
             this -> MakeResponse(buff_rcv, buff_res);
         }
-
-
-
-
             
     }
     return 0;
