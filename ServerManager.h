@@ -30,6 +30,8 @@ class ServerManager{
         ServerController* serverController;
 
         sock_info sock_details = {0};
+        int sock;
+        int sock_client;
         bool hasNavigated;
         const int exitCode = 2;
         const int max_client_accept = 5;
@@ -37,9 +39,8 @@ class ServerManager{
         int flag_exit_communicate = false;
 
         //メソッド
-        bool NeedExit();
-        int sock;
-        int sock_client;
+        
+
         int CreateSock(sock_info* sock_details, const char* path);
         int Bind(int sock, sock_info* sock_details);
         int BindedSocket(sock_info* sock_details, const char* path);
@@ -58,12 +59,12 @@ class ServerManager{
         void Logout(char* response);
         void LoginSyslog();
         void LogoutSyslog();
-        void UpdateSyslog(char* type, char* value);
+        void UpdateSyslog();
         void SendToClient(char* response);
         void InvalidRequestMessageToClient();
         bool IsUserLogined();
         void ShowClientStatus(const char* message);
-
+        bool ReadStandardInput();
 
     public:
         ServerManager(ClientManager* clientManager, DataManager* dataManager, ServerController* serverController);

@@ -112,11 +112,11 @@ void ServerManager :: LogoutSyslog(){
 
 }
 
-void ServerManager :: UpdateSyslog(char* type, char* value){
+void ServerManager :: UpdateSyslog(){
     char message[100];
     memset(message, '\0', sizeof(message));
     strncpy(message, this -> gid_logined_user, sizeof(this -> gid_logined_user));
-    strcat(message, " : update");
+    strcat(message, " : update money");
     this -> clientManager -> Syslog(message);
 } 
 ////////////////////////////////////////////////////////////////////////////
@@ -234,6 +234,7 @@ void ServerManager :: UpdateResponse(char* request, char* response){
     
     //今回の仕様ではmoneyで固定
     this -> dataManager -> Update(this -> gid_logined_user, "money", value_to_register_db);
+    this -> UpdateSyslog();
     this -> ShowClientStatus(" : 預金額を更新しました\n");    
 
 }
@@ -315,6 +316,9 @@ int ServerManager :: Communicate(){
         if(!(result_read == -1)){
             this -> MakeResponse(buff_rcv, buff_res);
         }
+
+        this -> ReadStandardInput();
+        
     }
     return 0;
 }
@@ -341,11 +345,13 @@ void ServerManager :: Receive(){
         if(this -> sock_client >= 0){
             int result_communicate = Communicate();
         }
-            
+        
         //終了判定（キー入力）
-        if(NeedExit()){
+        if(this -> ReadStandardInput()){
             break;
         }
+
+
             
     }
      
@@ -373,12 +379,23 @@ void ServerManager :: NavigateUser(){
 }
 
 
-bool ServerManager :: NeedExit(){
+bool ServerManager :: ReadStandardInput(){
 
         char read_buff[20];
         memset(read_buff, '\0', 10);
         //標準入力バッファに格納されたキーボード入力を読み取る
         read(0,read_buff, 10);
+
+        if(strcmp(read_buff, "ps\n") == 0){
+            if(this -> IsUserLogined()){
+                char message[100] = "user logined\n";
+                write(1, message, sizeof(message));
+            }
+            else{
+                char message[100] = "no user logined yet\n";
+                write(1, message, sizeof(message));     
+            }
+        }
 
         if(strcmp(read_buff, "exit\n") == 0){
             return true;
@@ -386,5 +403,8 @@ bool ServerManager :: NeedExit(){
 
         return false;
 }
+
+
+
 
 ////////////////////////////////////////
