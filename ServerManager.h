@@ -53,6 +53,8 @@ class ServerManager{
         void LoginSyslog();
         void LogoutSyslog();
         void UpdateSyslog(char* type, char* value);
+        void SendToClient(char* response);
+        void InvalidRequestMessageToClient();
 
     public:
         ServerManager(ClientManager* clientManager);

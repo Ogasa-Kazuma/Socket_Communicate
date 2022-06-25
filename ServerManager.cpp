@@ -1,6 +1,10 @@
 
 #include "ServerManager.h"
 
+
+
+//////////////////////////// Initialization /////////////////////////
+
 ServerManager :: ServerManager(ClientManager* clientManager){
 
 
@@ -20,13 +24,68 @@ int ServerManager :: Init(){
     return this -> sock;
 }
 
+/////////////////////////////////////////////////////////////////////////
+
+
+
+
+///////////////////////// Transportation ////////////////////////
+
+
 int ServerManager :: Accept(sock_info* sock_details){
     int size_sock_details = sizeof(sock_info);
     this -> sock_client = accept(this -> sock, (struct sockaddr*)&sock_details, (socklen_t *)&size_sock_details);
     return this -> sock_client;
 }
 
+int ServerManager :: CreateSock(sock_info* sock_details, const char* path){
 
+    int sock = 0;
+
+    if((sock = socket(AF_UNIX, SOCK_STREAM, 0)) == -1){
+        perror("socket");
+        return -1;
+    }
+
+    sock_details -> sun_family = AF_UNIX;
+    strcpy(sock_details -> sun_path, path);
+
+    return sock;
+}
+
+int ServerManager :: Bind(int sock, sock_info* sock_details){
+
+    remove(sock_details -> sun_path);
+
+    if(bind(sock, (struct sockaddr*)sock_details, sizeof(sock_info)) == -1){
+        perror("bind");
+        close(sock);
+        exit(1);
+    }
+
+    return sock;
+}
+
+
+int ServerManager :: BindedSocket(sock_info* sock_details, const char* path){
+    //const char*にしたのがC++での変更点
+    int sock = this -> CreateSock(sock_details, path);
+    sock = this -> Bind(sock, sock_details);
+    return sock;
+
+}
+
+////////////////////////////////////////////////////////////////////////////
+
+
+
+
+
+
+
+
+
+////////////////////////// Request Check /////////////////////////////////////
 void ServerManager :: ReadRequest(char* destination, char* source, int length, int offset){
         for(int i = 0; i < length; i++){
             destination[i] = source[i + offset];
@@ -44,21 +103,79 @@ bool ServerManager :: IsDataCame(char* buff){
     }
     return false;
 }
+//////////////////////////////////////////////////////////////////////////
 
 
-void ServerManager :: UpdateResponse(char* request, char* response){
 
-    char value_to_register_db[body_separate];
-    for(int i = 0; i < sizeof(value_to_register_db); i++){
-        value_to_register_db[i] = request[i + size_header];
-    }
-    strcpy(response, "upd");
-    
+
+
+
+
+///////////////////////// System Log ////////////////////////////////////
+void ServerManager :: LoginSyslog(){
+    char message[size_gid];
+    strncpy(message, this -> gid_logined_user, size_gid);
+    strcat(message, " : login");
+    this -> clientManager -> Syslog(message);
 
 }
 
+void ServerManager :: LogoutSyslog(){
+    char message[size_gid];
+    strncpy(message, this -> gid_logined_user, size_gid);
+    strcat(message, " : logout");
+    this -> clientManager -> Syslog(message);
+
+}
+
+void ServerManager :: UpdateSyslog(char* type, char* value){
+
+} 
+////////////////////////////////////////////////////////////////////////////
 
 
+
+
+
+
+
+//////////////////// message to client ////////////////////////////////////
+
+
+void ServerManager :: InvalidRequestMessageToClient(){
+    char invalid_message[100] = "invalid request";
+    this -> SendToClient(invalid_message);    
+}
+
+void ServerManager :: SendToClient(char* response){
+    write(this -> sock_client, response, MAX_BUFF_SIZE);
+}
+
+
+////////////////////////////////////////////////////////////////////////
+
+
+
+
+
+
+
+
+
+/////////////////// Login Status //////////////////////////////////////////
+
+void ServerManager :: InitGid(){
+    for(int i = 0; i < sizeof(this -> gid_logined_user); i++){
+        this -> gid_logined_user[i] = '\0';
+    }
+}
+
+///////////////////////////////////////////////////////////////////////////
+
+
+
+
+//////////////// Response /////////////////////////////////////////////////
 void ServerManager :: MakeResponse(char* request, char* response){
 
     char header[size_header];
@@ -78,52 +195,29 @@ void ServerManager :: MakeResponse(char* request, char* response){
     else if(header[0] == flag_update){
         this -> UpdateResponse(request, response);
     }
-
-}
-
-
-void ServerManager :: InitGid(){
-    for(int i = 0; i < sizeof(this -> gid_logined_user); i++){
-        this -> gid_logined_user[i] = '\0';
+    else{
+        this -> InvalidRequestMessageToClient();
     }
-}
-
-
-void ServerManager :: LoginSyslog(){
-    char message[size_gid];
-    strncpy(message, this -> gid_logined_user, size_gid);
-    strcat(message, " : login");
-    this -> clientManager -> Syslog(message);
-
-}
-
-void ServerManager :: LogoutSyslog(){
-    char message[size_gid];
-    strncpy(message, this -> gid_logined_user, size_gid);
-    strcat(message, " : logout");
-    this -> clientManager -> Syslog(message);
 
 }
 
 
-void ServerManager :: Logout(char* response){
 
-    this -> LogoutSyslog();
-    this -> InitGid();
-    strcpy(response, "out\n");
-    this -> flag_exit_communicate = true;
-    write(this -> sock_client, response, temp_buff_size);
 
-    const char write_buff[100] = "ログアウト成功";
-    write(1, write_buff, sizeof(write_buff));
+
+void ServerManager :: UpdateResponse(char* request, char* response){
+
+    char value_to_register_db[body_separate];
+    for(int i = 0; i < sizeof(value_to_register_db); i++){
+        value_to_register_db[i] = request[i + size_header];
+    }
     
-    close(this -> sock_client);
+    strcpy(response, "upd"); //いらない
+    this -> SendToClient(response);
+    
+
 }
 
-
-void ServerManager :: UpdateSyslog(char* type, char* value){
-
-} 
 
 
 void ServerManager :: InspectResponse(char* request, char* response){
@@ -138,16 +232,42 @@ void ServerManager :: InspectResponse(char* request, char* response){
     else if(type_request == type_money){
         strcpy(response, "kane");
     }
+    else{
+        this -> InvalidRequestMessageToClient();
+    }
 
     write(1, response, sizeof(response));
-
+    this -> SendToClient(response);
 
 }
 
 
 
+void ServerManager :: Logout(char* response){
+
+    this -> LogoutSyslog();
+    this -> InitGid();
+    strcpy(response, "out\n");
+    this -> flag_exit_communicate = true;
+    this -> SendToClient(response);//write(this -> sock_client, response, temp_buff_size);
+
+    const char write_buff[100] = "ログアウト成功";
+    write(1, write_buff, sizeof(write_buff));
+    
+    close(this -> sock_client);
+}
+
+//////////////////////////////////////////////////////////////////////
 
 
+
+
+
+
+
+
+
+/////////////////////////// Communicate to Client //////////////////
 
 int ServerManager :: Communicate(){
 
@@ -173,37 +293,18 @@ int ServerManager :: Communicate(){
 
         if(!(result_read == -1)){
 
-            buff_rcv[0] = flag_logout;
-            buff_rcv[1] = 0;
             this -> MakeResponse(buff_rcv, buff_res);
         }
 
 
 
-        //何もクライアントから送られてきてないとき、ずっとwriteで送信し返されそうだけど
-        else if(!(strcmp(buff_rcv, "\0") == 0)){
-            //MAX_BUFF_SIZEでいいのか？
-            write(this -> sock_client, buff_res, 5);
-        }
+
+            
     }
     return 0;
 }
 
 
-void ServerManager :: SetNonBlocking(int fd){
-    int flag = 1;
-    ioctl(fd, FIONBIO, &flag);
-}
-
-void ServerManager :: NavigateUser(){
-    if(!this -> hasNavigated){
-        //printfのみが後回しにされる！
-        //printfの代わりにwrite関数ならすぐ実行された！
-        const char write_buff[100] = "exit : 終了, ps : サーバー状況\n";
-        write(1, write_buff, 100);
-        this -> hasNavigated = true;
-    }
-}
 
 void ServerManager :: Receive(){
     
@@ -243,46 +344,27 @@ void ServerManager :: Receive(){
     }
      
 }
+/////////////////////////////////////////////////////////////////////
 
 
+//////////////////// Nonblocking mode ////////////
+void ServerManager :: SetNonBlocking(int fd){
+    int flag = 1;
+    ioctl(fd, FIONBIO, &flag);
+}
+//////////////////////////////////////////
 
-int ServerManager :: CreateSock(sock_info* sock_details, const char* path){
+/////////////// User Interface /////////////////////////////////
 
-    int sock = 0;
-
-    if((sock = socket(AF_UNIX, SOCK_STREAM, 0)) == -1){
-        perror("socket");
-        return -1;
+void ServerManager :: NavigateUser(){
+    if(!this -> hasNavigated){
+        //printfのみが後回しにされる！
+        //printfの代わりにwrite関数ならすぐ実行された！
+        const char write_buff[100] = "exit : 終了, ps : サーバー状況\n";
+        write(1, write_buff, 100);
+        this -> hasNavigated = true;
     }
-
-    sock_details -> sun_family = AF_UNIX;
-    strcpy(sock_details -> sun_path, path);
-
-    return sock;
 }
-
-int ServerManager :: Bind(int sock, sock_info* sock_details){
-
-    remove(sock_details -> sun_path);
-
-    if(bind(sock, (struct sockaddr*)sock_details, sizeof(sock_info)) == -1){
-        perror("bind");
-        close(sock);
-        exit(1);
-    }
-
-    return sock;
-}
-
-
-int ServerManager :: BindedSocket(sock_info* sock_details, const char* path){
-    //const char*にしたのがC++での変更点
-    int sock = this -> CreateSock(sock_details, path);
-    sock = this -> Bind(sock, sock_details);
-    return sock;
-
-}
-
 
 
 bool ServerManager :: NeedExit(){
@@ -298,3 +380,5 @@ bool ServerManager :: NeedExit(){
 
         return false;
 }
+
+////////////////////////////////////////
