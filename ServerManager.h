@@ -10,6 +10,8 @@
 #include <stdlib.h>
 #include <syslog.h>
 #include "ClientManager.h"
+#include "DataManager.h"
+#include "ServerController.h"
 #include "common.h"
 
 
@@ -24,6 +26,9 @@ class ServerManager{
     private:
         //変数
         ClientManager* clientManager;
+        DataManager* dataManager;
+        ServerController* serverController;
+
         sock_info sock_details = {0};
         bool hasNavigated;
         const int exitCode = 2;
@@ -61,7 +66,7 @@ class ServerManager{
 
 
     public:
-        ServerManager(ClientManager* clientManager);
+        ServerManager(ClientManager* clientManager, DataManager* dataManager, ServerController* serverController);
         ~ServerManager();
         int Init();
         void Receive();

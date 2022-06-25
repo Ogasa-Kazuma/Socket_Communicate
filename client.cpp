@@ -62,6 +62,9 @@ void SendToServer(int sock){
         else if(buff_input[1] == '2'){
             buff_send[1] = 2;
         }
+        else{
+            buff_send[1] = 5;
+        }
     }
     //ログアウト
     else if(buff_input[0] == '4'){

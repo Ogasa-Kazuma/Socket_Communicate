@@ -5,8 +5,11 @@
 
 //////////////////////////// Initialization /////////////////////////
 
-ServerManager :: ServerManager(ClientManager* clientManager){
+ServerManager :: ServerManager(ClientManager* clientManager, DataManager* dataManager, ServerController* serverController){
 
+    this -> clientManager = clientManager;
+    this -> dataManager = dataManager;
+    this -> serverController = serverController;
 
 }
 
@@ -238,6 +241,7 @@ void ServerManager :: UpdateResponse(char* request, char* response){
         value_to_register_db[i] = request[i + size_header];
     }
     
+    this -> dataManager -> Update(this -> gid_logined_user, "money", value_to_register_db);
     this -> ShowClientStatus(" : 預金額を更新しました\n");    
 
 }
@@ -247,22 +251,25 @@ void ServerManager :: UpdateResponse(char* request, char* response){
 void ServerManager :: InspectResponse(char* request, char* response){
 
     const char type_request = request[1];
+
+
     if(type_request == type_name){
-
-
-        strcpy(response, "kam");
+        this -> dataManager -> Get(this -> gid_logined_user, "name", response);
+        this -> SendToClient(response);
     }
     else if(type_request == type_birth){
-        strcpy(response, "bir");
+        this -> dataManager -> Get(this -> gid_logined_user, "birth", response);
+        this -> SendToClient(response);
     }
     else if(type_request == type_money){
-        strcpy(response, "kane");
+        this -> dataManager -> Get(this -> gid_logined_user, "money", response);
+        this -> SendToClient(response);
     }
     else{
         this -> InvalidRequestMessageToClient();
     }
 
-    this -> SendToClient(response);
+    
 
 
 }
