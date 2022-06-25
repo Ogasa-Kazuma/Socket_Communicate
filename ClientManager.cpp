@@ -2,8 +2,9 @@
 
 
 
-ClientManager :: ClientManager(){
-
+ClientManager :: ClientManager(DataManager* dataManager, ServerController* serverController){
+    this -> dataManager = dataManager;
+    this -> serverController = serverController;
 }
 
 void ClientManager :: ReadRequest(char* destination, char* source, int length, int offset){
@@ -25,8 +26,8 @@ void ClientManager :: LoginResponse(char* request, char* response, char* gid_log
         pin[j] = request[j + size_header + sizeof(gid)];
     }
 
-    bool canLogin = true;
-    bool canUpdate = true;
+    bool canLogin = this -> dataManager -> canLogin(gid, pin);//true;
+    bool canUpdate = this -> serverController -> canUpdate();
 
     if(canLogin){
         if(canUpdate){

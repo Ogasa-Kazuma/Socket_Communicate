@@ -6,7 +6,7 @@ DataManager :: DataManager(const char* DBfileName){
 }
 
 void DataManager :: Update(char* gid, const char* type, char* value){
-    printf("update request received");
+    //printf("update request received");
 }
 
 bool DataManager :: canLogin(char* gid, char* pin){

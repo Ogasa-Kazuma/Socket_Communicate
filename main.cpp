@@ -6,9 +6,10 @@
 
 int main(void){
 
-    ClientManager* clientManager = new ClientManager();
+    
     DataManager* dataManager = new DataManager("data.txt");
     ServerController* serverController = new ServerController(7, 19);
+    ClientManager* clientManager = new ClientManager(dataManager, serverController);
     ServerManager sManager(clientManager, dataManager, serverController);
     sManager.Init();
     sManager.Receive();
