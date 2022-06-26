@@ -99,6 +99,88 @@
 
 
 
+    #include <stdio.h>
+    #include <stdlib.h>
+    #include <string.h>
+     
+
+
+
+
+  
+
+ 
+
+
+
+    void Get(char* return_value, const char* gid, const char* type){
+
+        FILE *fp; // FILE型構造体
+        //データファイルの名前
+            char fname[] = "data3.txt";
+            char str[SIZE_DATA_LINE];
+        
+            fp = fopen(fname, "r"); // ファイルを開く。失敗するとNULLを返す。
+            if(fp == NULL) {
+                printf("%s file not open!\n", fname);
+                
+            }
+
+            //ファイルがあればファイル読み取り
+            else{
+                //fgetsは1行ずつデータを読み取る。1行分のデータがstrに格納される
+                while(fgets(str, SIZE_DATA_LINE, fp) != NULL) {
+                    printf("%s", str);
+                    //データファイルの最後は「end」なのでそこで終了
+                    if(strcmp(str, "end\n") == 0){
+                        //printf("end!\n");
+                        break;
+                    }
+                    
+                    char id[SIZE_GID + 1];
+                    char pin[SIZE_PIN + 1];
+                    char name[SIZE_BODY_DATA + 1];
+                    char birth[SIZE_BODY_DATA + 1];
+                    char money[SIZE_BODY_DATA + 1];
+                    
+                    //idの抽出
+                    int offset1 = SplitElements(str, id, 0);
+                    //nameの抽出
+                    int offset2 = SplitElements(str, pin, offset1);
+                    //nameの抽出
+                    int offset3 = SplitElements(str, name, offset2);
+                    //birthの抽出
+                    int offset4 = SplitElements(str, birth, offset3);
+                    //預金額の抽出
+                    int offset5 = SplitElements(str, money, offset4);
+                
+
+                    //なにの値を返すべきか判断
+                    if(strcmp(id, gid) == 0){
+                        //名前を返す
+                        if(strcmp(type, "name") == 0){
+                            strcpy(return_value, name);
+                        }
+                        else if(strcmp(type, "birth") == 0){
+                            //生年月日を返す
+                            strcpy(return_value, birth);
+                        }
+                        else if(strcmp(type, "money") == 0){
+                            //預金額を返す
+                            strcpy(return_value, money);
+                        }
+                    } 
+    
+                }
+            }
+
+            fclose(fp); // ファイルを閉じる
+
+    }
+
+
+
+
 
 
     int main(void){
@@ -107,7 +189,7 @@
         char money_value[SIZE_BODY_DATA];
         const char* gid = "0000000001";
         const char* type = "money";
-        strcpy(money_value, "43億8800万"); //漢字でも43.8800.0000でも大丈夫
+        strcpy(money_value, "43億8800万0000"); //漢字でも43.8800.0000でも大丈夫
 
         Update("data3.txt", gid, type, money_value);
 
@@ -118,6 +200,20 @@
         //4.データベースにGIDとかの項目をあらかじめ書いていなかったら : 
         //5.moneyの更新の値(money_value)の途中に「end」とか「'\0'」とか「'\n'」を入れたらどうなるか
         //上記は、私がコーディング中に「これやられたらやばいな」と思ったもので、対策はしてません
+
+
+        char result[SIZE_DATA_LINE];
+        const char* gid3 = "0000000001";
+        const char* type3 = "money";
+
+
+        //Getが受け取る文字列は終端文字がきちんと含まれてる前提
+        Get(result, gid3, type3);
+        printf("取得した値を表示\n");
+        //typeに"money"を指定したら、gidに対応したmoneyの値が表示される
+        printf("%s\n", result);
+
+
 
     	return 0;
     }
