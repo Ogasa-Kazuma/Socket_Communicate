@@ -22,7 +22,7 @@ class ClientManager{
 
     public:
         ClientManager(DataManager* dataManager, ServerController* serverController);
-        void LoginResponse(char* request, char* response, char* gid_logined_user);
+        void LoginResponse(char* request, char* response, char* gid_logined_user);  
         void Syslog(const char* message);
 
 

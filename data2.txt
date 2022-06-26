@@ -1,4 +1,4 @@
 id,pin,name,birth,money,
 0070200484,0406,ogasa,19990406,123456789,
-0070211111,0800,aaaaaaa,2000年,34567890123,
+0070211111,0800,hiroshi,2000年,ABfejfowejofjeiogjioejgiojeriogjoierjo                                                                                   ,
 end

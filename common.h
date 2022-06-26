@@ -1,10 +1,17 @@
 #pragma once
 
 #define MAX_BUFF_SIZE 272
+#define NUM_CANMA 5
+#define NUM_NEWLINE_CHAR 1
+//ヘッダーは含まない、カンマと改行文字
+#define SIZE_DATA_LINE (MAX_BUFF_SIZE - SIZE_HEADER + NUM_CANMA + NUM_NEWLINE_CHAR)
 
 #define HEADER_COMMAND 0
 #define HEADER_DATA_TYPE 1
 
+//const char* STR_NAME = "name";
+//const char* STR_BIRTH = "birth";
+//const char* STR_MONEY = "money";
 
 #define SIZE_HEADER  2
 #define SIZE_GID  10
